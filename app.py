@@ -1,17 +1,17 @@
 import streamlit as st
 from cryptography.fernet import Fernet
-import time
-import os 
+import os
+import time 
 
-# Your existing functions
 def write_key():
     key = Fernet.generate_key()
     with open("key.key", "wb") as key_file:
         key_file.write(key)
 
 def load_key():
-    with open('key.key', "rb") as file:
-        key = file.read()
+    file = open('key.key', "rb")
+    key = file.read()
+    file.close()
     return key
 
 def verify_master_pwd(master_pwd):
@@ -69,3 +69,4 @@ if st.button("Unlock"):
             add(fernet)
     else:
         st.error("Access denied. Incorrect master password.")
+
