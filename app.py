@@ -9,17 +9,22 @@ def write_key():
         key_file.write(key)
 
 def load_key():
+    st.write("Loading key...")  # Debugging line
     file = open('key.key', "rb")
     key = file.read()
     file.close()
+    st.write(f"Loaded key: {key}")  # Debugging line
     return key
 
 def verify_master_pwd(master_pwd):
+    st.write("Verifying master password...")  # Debugging line
     with open("master_pwd.txt", 'rb') as f:
         stored_pwd = f.read()
+    st.write(f"Stored password: {stored_pwd}, Input password: {master_pwd.encode()}")  # Debugging line
     return stored_pwd == master_pwd.encode()
 
 def update_master_pwd(new_master_pwd):
+    st.write(f"Updating master password to: {new_master_pwd}")  # Debugging line
     with open('master_pwd.txt', "wb") as f:
         f.write(new_master_pwd.encode())
 
@@ -33,6 +38,7 @@ def initialize():
             st.success('Master password set successfully.')
 
 def view(fernet):
+    st.write("Viewing stored passwords...")  # Debugging line
     if os.path.exists('password.txt'):
         with open('password.txt', 'r') as f:
             for lines in f.readlines():
@@ -69,4 +75,6 @@ if st.button("Unlock"):
             add(fernet)
     else:
         st.error("Access denied. Incorrect master password.")
+
+
 
