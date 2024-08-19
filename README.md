@@ -1,10 +1,17 @@
 # im just a begginer with python, please help me improve this!
 
-
 import streamlit as st
 from cryptography.fernet import Fernet
 import os
-import time 
+import time
+
+
+if 'authenticated' not in st.session_state:
+    st.session_state.authenticated = False
+if 'attempts' not in st.session_state:
+    st.session_state.attempts = 10
+if 'lockout_time' not in st.session_state:
+    st.session_state.lockout_time = None
 
 def write_key():
     key = Fernet.generate_key()
@@ -12,17 +19,23 @@ def write_key():
         key_file.write(key)
 
 def load_key():
+    st.write("Loading key...")  
     file = open('key.key', "rb")
     key = file.read()
     file.close()
+    st.write(f"Loaded key: {key}")  
     return key
 
 def verify_master_pwd(master_pwd):
+    st.write("Verifying master password...")  
     with open("master_pwd.txt", 'rb') as f:
         stored_pwd = f.read()
+    st.write(f"Access denied. Incorrect master password. {attempts} attempts left.")
+
     return stored_pwd == master_pwd.encode()
 
 def update_master_pwd(new_master_pwd):
+    st.write(f"Updating master password to: {new_master_pwd}") 
     with open('master_pwd.txt', "wb") as f:
         f.write(new_master_pwd.encode())
 
@@ -35,7 +48,12 @@ def initialize():
             update_master_pwd(new_master_pwd)
             st.success('Master password set successfully.')
 
+def lockout_timer(duration):
+    st.warning(f"Too many failed attempts. Please wait {duration // 60} minutes before trying again.")
+    st.session_state.lockout_time = time.time() + duration
+
 def view(fernet):
+    st.write("Viewing stored passwords...")  
     if os.path.exists('password.txt'):
         with open('password.txt', 'r') as f:
             for lines in f.readlines():
@@ -51,7 +69,7 @@ def add(fernet):
             f.write(name + '|' + fernet.encrypt(pwd.encode()).decode() + '\n')
         st.success('Password saved successfully!')
 
-# Streamlit App
+
 st.title("Password Manager")
 
 initialize()
@@ -59,17 +77,36 @@ initialize()
 key = load_key()
 fernet = Fernet(key)
 
-master_pwd = st.text_input('Enter your master password:', type="password")
+if st.session_state.lockout_time and time.time() < st.session_state.lockout_time:
+    st.warning("Account is locked. Please wait a while before trying again.")
+elif st.session_state.authenticated:
+    option = st.selectbox('Choose an option:', ('View Passwords', 'Add Password', 'Change Master Password'))
+    
+    if option == 'View Passwords':
+        view(fernet)
+    elif option == 'Add Password':
+        add(fernet)
+    elif option == 'Change Master Password':
+        current_pwd = st.text_input("Enter current master password:", type="password")
+        if st.button("Verify"):
+            if verify_master_pwd(current_pwd):
+                new_master_pwd = st.text_input("Enter new master password:", type="password")
+                if st.button("Change Password"):
+                    update_master_pwd(new_master_pwd)
+                    st.success("Master password updated successfully!")
+            else:
+                st.error("Incorrect master password.")
+else:
+    master_pwd = st.text_input('Enter your master password:', type="password")
+    
+    if st.button("Unlock"):
+        if verify_master_pwd(master_pwd):
+            st.session_state.authenticated = True
+            st.success("Access granted")
+        else:
+            st.session_state.attempts -= 1
+            st.error(f"Access denied. Incorrect master password. {st.session_state.attempts} attempts left.")
+            if st.session_state.attempts <= 0:
+                lockout_timer(1800)  
 
-if st.button("Unlock"):
-    if verify_master_pwd(master_pwd):
-        st.success("Access granted")
-        option = st.selectbox('Choose an option:', ('View Passwords', 'Add Password'))
-        
-        if option == 'View Passwords':
-            view(fernet)
-        elif option == 'Add Password':
-            add(fernet)
-    else:
-        st.error("Access denied. Incorrect master password.")
 
