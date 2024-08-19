@@ -3,7 +3,7 @@ from cryptography.fernet import Fernet
 import os
 import time
 
-# Initialize session state
+
 if 'authenticated' not in st.session_state:
     st.session_state.authenticated = False
 if 'attempts' not in st.session_state:
@@ -17,22 +17,23 @@ def write_key():
         key_file.write(key)
 
 def load_key():
-    st.write("Loading key...")  # Debugging line
+    st.write("Loading key...")  
     file = open('key.key', "rb")
     key = file.read()
     file.close()
-    st.write(f"Loaded key: {key}")  # Debugging line
+    st.write(f"Loaded key: {key}")  
     return key
 
 def verify_master_pwd(master_pwd):
-    st.write("Verifying master password...")  # Debugging line
+    st.write("Verifying master password...")  
     with open("master_pwd.txt", 'rb') as f:
         stored_pwd = f.read()
-    st.write(f"Stored password: {stored_pwd}, Input password: {master_pwd.encode()}")  # Debugging line
+    st.write(f"Access denied. Incorrect master password. {attempts} attempts left.")
+
     return stored_pwd == master_pwd.encode()
 
 def update_master_pwd(new_master_pwd):
-    st.write(f"Updating master password to: {new_master_pwd}")  # Debugging line
+    st.write(f"Updating master password to: {new_master_pwd}") 
     with open('master_pwd.txt', "wb") as f:
         f.write(new_master_pwd.encode())
 
@@ -50,7 +51,7 @@ def lockout_timer(duration):
     st.session_state.lockout_time = time.time() + duration
 
 def view(fernet):
-    st.write("Viewing stored passwords...")  # Debugging line
+    st.write("Viewing stored passwords...")  
     if os.path.exists('password.txt'):
         with open('password.txt', 'r') as f:
             for lines in f.readlines():
@@ -66,7 +67,7 @@ def add(fernet):
             f.write(name + '|' + fernet.encrypt(pwd.encode()).decode() + '\n')
         st.success('Password saved successfully!')
 
-# Streamlit App
+
 st.title("Password Manager")
 
 initialize()
@@ -104,4 +105,4 @@ else:
             st.session_state.attempts -= 1
             st.error(f"Access denied. Incorrect master password. {st.session_state.attempts} attempts left.")
             if st.session_state.attempts <= 0:
-                lockout_timer(1800)  # Lockout for 30 minutes
+                lockout_timer(1800)  
